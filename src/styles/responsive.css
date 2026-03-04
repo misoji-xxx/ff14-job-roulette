@@ -1,0 +1,110 @@
+@media (max-width: 480px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .party-size-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .role-badge {
+    width: 36px;
+    height: 36px;
+  }
+
+  .role-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .player-input {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .job-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .result-job {
+    font-size: 1rem;
+  }
+
+  .mode-toggle-btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .player-input-row.advanced {
+    flex-wrap: wrap;
+  }
+
+  .role-select-btn {
+    width: 145px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .role-select-btn .role-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .exclude-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .exclude-btn::after {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+  }
+
+  .exclude-btn::before {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 2px);
+    transform: translateX(-50%);
+    border-left-color: transparent;
+    border-top-color: var(--color-bg-light);
+  }
+
+  .settings-group {
+    grid-template-columns: 1fr;
+  }
+
+  .job-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .job-toggle {
+    padding: 10px 6px;
+  }
+
+  .job-toggle-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .job-toggle-name {
+    font-size: 0.7rem;
+  }
+
+  .role-category-options {
+    grid-template-columns: 1fr;
+  }
+
+  .role-option {
+    padding: 10px 8px;
+  }
+}
