@@ -1,6 +1,8 @@
 import {
   SLOT_ROLE_4_LABELS,
   SLOT_ROLE_8_LABELS,
+  SLOT_ROLE_ICONS,
+  getRoleClass,
   type SlotRole4,
   type SlotRole8,
 } from '../../data/jobs';
@@ -38,10 +40,45 @@ export class RoleModal {
 
   renderHTML(): string {
     return `
-      <dialog id="${this.ids.modal}" aria-labelledby="roleModalHeading">
-        <h2 id="roleModalHeading">ロール設定</h2>
-        <div id="${this.ids.roleGrid}"></div>
-        <button type="button" id="${this.ids.closeBtn}">閉じる</button>
+      <dialog id="${this.ids.modal}" class="app-dialog app-dialog--role" aria-labelledby="roleModalHeading">
+        <div class="dialog-shell">
+          <header class="dialog-header">
+            <div>
+              <h2 id="roleModalHeading">ロール設定</h2>
+              <p class="dialog-description">このプレイヤーに割り当てるロールを選択します。</p>
+            </div>
+            <button
+              type="button"
+              id="${this.ids.closeBtn}"
+              class="dialog-close"
+              aria-label="閉じる"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </header>
+
+          <div class="dialog-body">
+            <div
+              id="${this.ids.roleGrid}"
+              class="role-grid"
+              role="group"
+              aria-label="割り当てるロール"
+            ></div>
+          </div>
+
+        </div>
       </dialog>
     `;
   }
@@ -64,13 +101,43 @@ export class RoleModal {
 
     const renderRoleButton = (role: SlotRole4 | SlotRole8) => {
       const isSelected = role === currentRole;
+      const roleClass = getRoleClass(role);
+      const roleLabel = roleLabels[role as keyof typeof roleLabels];
       return `
         <button
           type="button"
+          class="role-card role-card--${roleClass}"
           data-role="${role}"
+          data-role-class="${roleClass}"
           aria-pressed="${isSelected}"
         >
-          ${roleLabels[role as keyof typeof roleLabels]}${isSelected ? '（選択中）' : ''}
+          <span class="role-card__icon-wrap" aria-hidden="true">
+            <img
+              class="role-card__icon"
+              src="${SLOT_ROLE_ICONS[role]}"
+              alt=""
+              width="44"
+              height="44"
+            />
+          </span>
+          <span class="role-card__content">
+            <span class="role-card__label">${roleLabel}</span>
+          </span>
+          <span class="role-card__selected" aria-hidden="true">
+            <svg
+              viewBox="0 0 20 20"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              focusable="false"
+            >
+              <path d="M4 10.5l3.5 3.5L16 5.5" />
+            </svg>
+          </span>
         </button>
       `;
     };

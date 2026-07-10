@@ -1,3 +1,4 @@
+import './styles.css';
 import {
   runRoulette,
   runAdvancedRoulette,
@@ -6,7 +7,12 @@ import {
   canMaintainAllianceComposition,
   type PartyMember,
 } from './roulette';
-import { type SlotRole4, type SlotRole8, isValidSlotRole4, isValidSlotRole8 } from './data/jobs';
+import {
+  type SlotRole4,
+  type SlotRole8,
+  isValidSlotRole4,
+  isValidSlotRole8,
+} from './data/jobs';
 import {
   type PartySize,
   type AdvancedModeSettings,
@@ -18,8 +24,10 @@ import {
 import { ExcludeJobModal } from './components/modals/ExcludeJobModal';
 import { RoleModal } from './components/modals/RoleModal';
 import { renderPlayerInputs } from './components/PlayerInputsRenderer';
+import { PlayerNameStore } from './playerNames';
 import {
   renderResults,
+  renderSingleResult,
   renderError,
   showResultsSection,
   hideResultsSection,
@@ -33,6 +41,7 @@ class JobRouletteApp {
   private appMode: AppMode = 'simple';
   private playerInputs: HTMLInputElement[] = [];
   private resultsContainer: HTMLElement | null = null;
+  private playerNames = new PlayerNameStore();
   private advancedSettings4: AdvancedModeSettings4 = createDefaultAdvancedSettings4();
   private advancedSettings8: AdvancedModeSettings8 = createDefaultAdvancedSettings8();
   private lastResults: PartyMember[] = [];
@@ -57,48 +66,102 @@ class JobRouletteApp {
       throw new Error('App container (#app) not found');
     }
     app.innerHTML = `
-      <main>
-        <h1>FF14 ジョブルーレット</h1>
-        <p>パーティメンバーのジョブをランダムに決定します。</p>
+      <div class="app-shell">
+        <main class="main-content">
+          <section class="hero" aria-labelledby="pageTitle">
+            <div class="hero-copy">
+              <h1 id="pageTitle">FFXIV JOB ROULETTE</h1>
+              <p class="hero-description">
+                パーティーメンバーと条件を設定し、次に使用するジョブをランダムに決定します。
+              </p>
+            </div>
+          </section>
 
-        <fieldset>
-          <legend>モード</legend>
-          <label>
-            <input type="radio" name="appMode" value="simple" ${this.appMode === 'simple' ? 'checked' : ''} />
-            シンプル
-          </label>
-          <label>
-            <input type="radio" name="appMode" value="advanced" ${this.appMode === 'advanced' ? 'checked' : ''} />
-            高機能
-          </label>
-        </fieldset>
+          <div class="content-stack">
+            <section class="setup-panel" aria-labelledby="setupHeading">
+              <header class="panel-heading">
+                <div>
+                  <h2 id="setupHeading">抽選設定</h2>
+                  <p class="panel-description">抽選条件とプレイヤーを設定します。</p>
+                </div>
+              </header>
 
-        <fieldset>
-          <legend>パーティ人数</legend>
-          <label>
-            <input type="radio" name="partySize" value="4" ${this.partySize === 4 ? 'checked' : ''} />
-            4人
-          </label>
-          <label>
-            <input type="radio" name="partySize" value="8" ${this.partySize === 8 ? 'checked' : ''} />
-            8人
-          </label>
-        </fieldset>
+              <div class="configuration-grid">
+                <fieldset class="control-group">
+                  <legend>抽選モード</legend>
+                  <p class="control-description">設定の詳細度を選択します。</p>
+                  <div class="segmented-control">
+                    <label class="segment-option">
+                      <input class="visually-hidden" type="radio" name="appMode" value="simple" ${this.appMode === 'simple' ? 'checked' : ''} />
+                      <span class="segment-copy">
+                        <strong>シンプル</strong>
+                      </span>
+                    </label>
+                    <label class="segment-option">
+                      <input class="visually-hidden" type="radio" name="appMode" value="advanced" ${this.appMode === 'advanced' ? 'checked' : ''} />
+                      <span class="segment-copy">
+                        <strong>高機能</strong>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
 
-        ${this.appMode === 'advanced' ? this.renderAdvancedSettings() : ''}
+                <fieldset class="control-group">
+                  <legend>パーティー人数</legend>
+                  <p class="control-description">対象コンテンツの人数を選択します。</p>
+                  <div class="segmented-control segmented-control--party">
+                    <label class="segment-option">
+                      <input class="visually-hidden" type="radio" name="partySize" value="4" ${this.partySize === 4 ? 'checked' : ''} />
+                      <span class="segment-copy">
+                        <strong>4人</strong>
+                      </span>
+                    </label>
+                    <label class="segment-option">
+                      <input class="visually-hidden" type="radio" name="partySize" value="8" ${this.partySize === 8 ? 'checked' : ''} />
+                      <span class="segment-copy">
+                        <strong>8人</strong>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
 
-        <section aria-labelledby="playersHeading">
-          <h2 id="playersHeading">プレイヤー${this.appMode === 'advanced' ? '・ロール' : ''}</h2>
-          <div id="playerInputs"></div>
-        </section>
+              ${this.appMode === 'advanced' ? this.renderAdvancedSettings() : ''}
 
-        <button type="button" id="rouletteBtn">ルーレット開始</button>
+              <section class="players-section" aria-labelledby="playersHeading">
+                <div class="subsection-heading">
+                  <div>
+                    <h3 id="playersHeading">プレイヤー${this.appMode === 'advanced' ? '・ロール設定' : ''}</h3>
+                  </div>
+                  <span class="slot-count">${this.partySize}人</span>
+                </div>
+                <div id="playerInputs"></div>
+              </section>
 
-        <section id="resultsSection" aria-labelledby="resultsHeading" hidden>
-          <h2 id="resultsHeading">結果</h2>
-          <div id="results"></div>
-        </section>
-      </main>
+              <button type="button" id="rouletteBtn" class="roulette-button">
+                <span class="roulette-button__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" />
+                  </svg>
+                </span>
+                <span class="roulette-button__copy">
+                  <strong>ルーレットを開始</strong>
+                </span>
+              </button>
+            </section>
+
+            <section id="resultsSection" class="results-panel" aria-labelledby="resultsHeading" hidden>
+              <header class="panel-heading panel-heading--results">
+                <div>
+                  <h2 id="resultsHeading">抽選結果</h2>
+                </div>
+              </header>
+              <div id="results"></div>
+            </section>
+          </div>
+        </main>
+
+      </div>
 
       ${this.excludeJobModal.renderHTML()}
       ${this.roleModal.renderHTML()}
@@ -114,35 +177,53 @@ class JobRouletteApp {
     const canMaintainAlliance = canMaintainAllianceComposition(settings);
     const allianceSetting = this.partySize === 8
       ? `
-          <label>
+          <label class="setting-toggle">
             <input
+              class="setting-toggle__input"
               type="checkbox"
               id="maintainAllianceComposition"
               ${settings.maintainAllianceComposition ? 'checked' : ''}
               ${!canMaintainAlliance ? 'disabled' : ''}
             />
-            アライアンス構成を維持${!canMaintainAlliance ? '（固定枠が超過）' : ''}
+            <span class="setting-toggle__control" aria-hidden="true"><span></span></span>
+            <span class="setting-toggle__copy">
+              <strong>アライアンス構成</strong>
+              <small>${!canMaintainAlliance ? '固定枠が構成上限を超過しています' : '1T・2H・5DPSへ調整'}</small>
+            </span>
           </label>
         `
       : '';
 
     return `
-      <fieldset>
-        <legend>詳細設定</legend>
-          <label>
-            <input type="checkbox" id="noJobDuplicates" ${settings.noJobDuplicates ? 'checked' : ''} />
-            ジョブ重複禁止
+      <fieldset class="advanced-settings">
+        <div class="advanced-settings__heading">
+          <legend>詳細設定</legend>
+        </div>
+        <div class="settings-grid">
+          <label class="setting-toggle">
+            <input class="setting-toggle__input" type="checkbox" id="noJobDuplicates" ${settings.noJobDuplicates ? 'checked' : ''} />
+            <span class="setting-toggle__control" aria-hidden="true"><span></span></span>
+            <span class="setting-toggle__copy">
+              <strong>ジョブ重複禁止</strong>
+              <small>同一ジョブの重複を回避</small>
+            </span>
           </label>
-          <label>
+          <label class="setting-toggle">
             <input
+              class="setting-toggle__input"
               type="checkbox"
               id="maintainStandardComposition"
               ${settings.maintainStandardComposition ? 'checked' : ''}
               ${!canMaintain ? 'disabled' : ''}
             />
-            標準構成を維持${!canMaintain ? '（固定枠が超過）' : ''}
+            <span class="setting-toggle__control" aria-hidden="true"><span></span></span>
+            <span class="setting-toggle__copy">
+              <strong>標準構成を維持</strong>
+              <small>${!canMaintain ? '固定枠が構成上限を超過しています' : this.partySize === 4 ? '1T・1H・2DPSへ調整' : '2T・2H・4DPSへ調整'}</small>
+            </span>
           </label>
           ${allianceSetting}
+        </div>
       </fieldset>
     `;
   }
@@ -156,6 +237,7 @@ class JobRouletteApp {
     this.playerInputs = renderPlayerInputs(container, {
       partySize: this.partySize,
       isAdvancedMode: this.appMode === 'advanced',
+      playerNames: this.playerNames.valuesFor(this.partySize),
       advancedSettings: this.appMode === 'advanced' ? this.currentAdvancedSettings : undefined,
     });
 
@@ -275,10 +357,8 @@ class JobRouletteApp {
   private setupPlayerInputListeners(): void {
     this.playerInputs.forEach((input) => {
       input.addEventListener('input', () => {
-        if (this.appMode === 'advanced') {
-          const index = parseInt(input.dataset.index || '0', 10);
-          this.updatePlayerName(index, input.value);
-        }
+        const index = parseInt(input.dataset.index || '0', 10);
+        this.updatePlayerName(index, input.value);
       });
     });
   }
@@ -304,11 +384,12 @@ class JobRouletteApp {
   }
 
   private updatePlayerName(index: number, name: string): void {
-    if (this.partySize === 4) {
-      this.advancedSettings4.players[index].name = name;
-    } else {
-      this.advancedSettings8.players[index].name = name;
-    }
+    this.playerNames.set(index, name);
+
+    const player4 = this.advancedSettings4.players[index];
+    const player8 = this.advancedSettings8.players[index];
+    if (player4) player4.name = name;
+    if (player8) player8.name = name;
   }
 
   private setNoJobDuplicates(value: boolean): void {
@@ -377,49 +458,62 @@ class JobRouletteApp {
   }
 
   private getPlayerNames(): string[] {
-    return this.playerInputs.map((input) => input.value);
+    this.playerInputs.forEach((input, index) => {
+      this.updatePlayerName(index, input.value);
+    });
+    return this.playerNames.valuesFor(this.partySize);
+  }
+
+  private indicateRouletteActivity(): void {
+    const button = document.getElementById('rouletteBtn') as HTMLButtonElement | null;
+    if (!button) return;
+
+    button.classList.remove('is-rolling');
+    void button.offsetWidth;
+    button.classList.add('is-rolling');
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+
+    window.setTimeout(() => {
+      button.classList.remove('is-rolling');
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    }, 720);
   }
 
   private executeRoulette(): void {
+    this.indicateRouletteActivity();
+
     if (this.appMode === 'simple') {
       const playerNames = this.getPlayerNames();
       const results = runRoulette(this.partySize, playerNames);
-      this.showResults(results);
+      this.showResults(results, true);
     } else {
       const settings = this.currentAdvancedSettings;
       for (let i = 0; i < settings.players.length; i++) {
-        settings.players[i].name = this.playerInputs[i]?.value || '';
+        this.updatePlayerName(i, this.playerInputs[i]?.value || '');
       }
 
       const result = runAdvancedRoulette(settings);
 
       if (!result.success) {
-        this.showError(result.error || 'エラーが発生しました');
+        this.showError(result.error || 'エラーが発生しました', true);
         return;
       }
 
-      this.showResults(result.members);
+      this.showResults(result.members, true);
     }
   }
 
-  private showResults(members: PartyMember[]): void {
+  private showResults(members: PartyMember[], shouldScroll = false): void {
     if (!this.resultsContainer) {
       throw new Error('Results container not found');
     }
 
     this.lastResults = members;
     showResultsSection();
-
-    const useSubRoleForFree =
-      this.appMode === 'advanced' &&
-      this.currentAdvancedSettings.maintainStandardComposition &&
-      canMaintainStandardComposition(this.currentAdvancedSettings);
-
-    renderResults(this.resultsContainer, members, {
-      isAdvancedMode: this.appMode === 'advanced',
-      partySize: this.partySize,
-      useSubRoleForFree,
-    });
+    renderResults(this.resultsContainer, members);
+    if (shouldScroll) this.scrollToResults();
   }
 
   private executeReroll(index: number): void {
@@ -446,14 +540,30 @@ class JobRouletteApp {
     }
 
     this.lastResults[index] = result.member;
-    this.showResults([...this.lastResults]);
+    if (this.resultsContainer) {
+      renderSingleResult(this.resultsContainer, result.member, index);
+    }
   }
 
-  private showError(message: string): void {
+  private showError(message: string, shouldScroll = false): void {
     if (!this.resultsContainer) return;
 
     showResultsSection();
     renderError(this.resultsContainer, message);
+    if (shouldScroll) this.scrollToResults();
+  }
+
+  private scrollToResults(): void {
+    const resultsSection = document.getElementById('resultsSection');
+    if (!resultsSection) return;
+
+    window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      resultsSection.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
   }
 
   private async copyResultsToClipboard(): Promise<void> {
@@ -464,10 +574,11 @@ class JobRouletteApp {
     try {
       await navigator.clipboard.writeText(text);
       const copyBtn = document.getElementById('copyResultsBtn');
-      if (copyBtn) {
-        copyBtn.textContent = 'コピーしました';
+      const copyLabel = copyBtn?.querySelector<HTMLElement>('[data-copy-label]');
+      if (copyLabel) {
+        copyLabel.textContent = 'コピーしました';
         setTimeout(() => {
-          copyBtn.textContent = '結果をコピー';
+          copyLabel.textContent = '結果をコピー';
         }, 2000);
       }
     } catch {
