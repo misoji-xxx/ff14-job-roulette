@@ -17,7 +17,6 @@ export interface ResultsRendererOptions {
   isAdvancedMode: boolean;
   partySize: PartySize;
   useSubRoleForFree: boolean;
-  rerollIndex?: number;
 }
 
 function getRoleLabel(
@@ -58,68 +57,42 @@ export function renderResults(
   members: PartyMember[],
   options: ResultsRendererOptions
 ): void {
-  const { rerollIndex } = options;
-  const isReroll = rerollIndex !== undefined;
-
   let html = '';
   for (let i = 0; i < members.length; i++) {
     const member = members[i];
     const roleLabel = getRoleLabel(member, options);
 
     const jobIcon = member.job?.icon || '';
-    const shouldAnimate = !isReroll || i === rerollIndex;
-    const delay = isReroll ? 0 : i * 0.05;
-    const animationClass = shouldAnimate ? '' : ' no-animation';
     html += `
-      <div class="result-card role-${member.role}${animationClass}" style="animation-delay: ${delay}s">
-        <img src="${jobIcon}" alt="${member.job?.name || ''}" class="job-icon" />
-        <div class="result-info">
-          <div class="result-player">${escapeHtml(member.name)}</div>
-          <div class="result-job">${member.job?.name || '未定'}</div>
-        </div>
-        <div class="result-role">${roleLabel}</div>
-        <button type="button" class="reroll-btn" data-index="${i}" aria-label="${escapeHtml(member.name)}のジョブを再抽選">
-          <svg class="reroll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 4v6h6M23 20v-6h-6"/>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-          </svg>
-        </button>
-      </div>
+      <p>
+        <img src="${jobIcon}" alt="" width="38" height="38" />
+        <strong>${escapeHtml(member.name)}</strong>: ${member.job?.name || '未定'} (${roleLabel})
+        <button type="button" data-action="reroll" data-index="${i}">再抽選</button>
+      </p>
     `;
   }
 
   html += `
-    <button type="button" class="copy-results-btn" id="copyResultsBtn" aria-label="結果をクリップボードにコピー">
-      <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-      <span class="copy-text">結果をコピー</span>
-    </button>
+    <button type="button" id="copyResultsBtn">結果をコピー</button>
   `;
 
   container.innerHTML = html;
 }
 
 export function renderError(container: HTMLElement, message: string): void {
-  container.innerHTML = `
-    <div class="error-message">
-      <span class="error-icon">⚠️</span>
-      <p>${escapeHtml(message)}</p>
-    </div>
-  `;
+  container.innerHTML = `<p role="alert">${escapeHtml(message)}</p>`;
 }
 
 export function showResultsSection(): void {
   const resultsSection = document.getElementById('resultsSection');
   if (resultsSection) {
-    resultsSection.classList.add('visible');
+    resultsSection.hidden = false;
   }
 }
 
 export function hideResultsSection(): void {
   const resultsSection = document.getElementById('resultsSection');
   if (resultsSection) {
-    resultsSection.classList.remove('visible');
+    resultsSection.hidden = true;
   }
 }

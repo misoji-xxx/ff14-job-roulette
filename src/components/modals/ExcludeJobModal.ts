@@ -39,22 +39,14 @@ export class ExcludeJobModal {
 
   renderHTML(): string {
     return `
-      <div class="modal-overlay" id="${this.ids.modal}">
-        <div class="modal">
-          <div class="modal-header">
-            <h3>除外ジョブ設定</h3>
-            <button type="button" class="modal-close" id="${this.ids.closeBtn}">&times;</button>
-          </div>
-          <div class="modal-body">
-            <p class="modal-description">選択したジョブは割り当てから除外されます</p>
-            <div class="job-grid" id="${this.ids.jobGrid}"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="modal-btn modal-btn-secondary" id="${this.ids.clearBtn}">クリア</button>
-            <button type="button" class="modal-btn modal-btn-primary" id="${this.ids.saveBtn}">保存</button>
-          </div>
-        </div>
-      </div>
+      <dialog id="${this.ids.modal}" aria-labelledby="excludeModalHeading">
+        <h2 id="excludeModalHeading">除外ジョブ設定</h2>
+        <p>選択したジョブは割り当てから除外されます。</p>
+        <div id="${this.ids.jobGrid}"></div>
+        <button type="button" id="${this.ids.clearBtn}">クリア</button>
+        <button type="button" id="${this.ids.saveBtn}">保存</button>
+        <button type="button" id="${this.ids.closeBtn}">閉じる</button>
+      </dialog>
     `;
   }
 
@@ -63,7 +55,7 @@ export class ExcludeJobModal {
     this.tempExcludedJobIds = [...excludedJobIds];
     this.callbacks = callbacks;
 
-    const modal = document.getElementById(this.ids.modal);
+    const modal = document.getElementById(this.ids.modal) as HTMLDialogElement | null;
     const jobGrid = document.getElementById(this.ids.jobGrid);
 
     if (!modal || !jobGrid) return;
@@ -72,23 +64,27 @@ export class ExcludeJobModal {
       (job) => `
         <button
           type="button"
-          class="job-toggle ${this.tempExcludedJobIds.includes(job.id) ? 'excluded' : ''}"
           data-job-id="${job.id}"
+          aria-pressed="${this.tempExcludedJobIds.includes(job.id)}"
         >
-          <img src="${job.icon}" alt="${job.name}" class="job-toggle-icon" />
-          <span class="job-toggle-name">${job.name}</span>
+          ${job.name}${this.tempExcludedJobIds.includes(job.id) ? '（除外中）' : ''}
         </button>
       `
     ).join('');
 
     jobGrid.addEventListener('click', this.boundHandleJobToggle);
-    modal.classList.add('visible');
+    modal.oncancel = (event) => {
+      event.preventDefault();
+      this.close();
+    };
+    modal.showModal();
   }
 
   close(): void {
-    const modal = document.getElementById(this.ids.modal);
+    const modal = document.getElementById(this.ids.modal) as HTMLDialogElement | null;
     const jobGrid = document.getElementById(this.ids.jobGrid);
-    if (modal) modal.classList.remove('visible');
+    if (modal?.open) modal.close();
+    if (modal) modal.oncancel = null;
     if (jobGrid) jobGrid.removeEventListener('click', this.boundHandleJobToggle);
 
     this.callbacks?.onClose();
@@ -108,15 +104,17 @@ export class ExcludeJobModal {
     this.tempExcludedJobIds = [];
     const jobGrid = document.getElementById(this.ids.jobGrid);
     if (jobGrid) {
-      jobGrid.querySelectorAll('.job-toggle').forEach((btn) => {
-        btn.classList.remove('excluded');
+      jobGrid.querySelectorAll<HTMLButtonElement>('[data-job-id]').forEach((btn) => {
+        const job = ALL_JOBS.find((item) => item.id === btn.dataset.jobId);
+        btn.setAttribute('aria-pressed', 'false');
+        if (job) btn.textContent = job.name;
       });
     }
   }
 
   private handleJobToggle(e: Event): void {
     const target = e.target as HTMLElement;
-    const btn = target.closest('.job-toggle') as HTMLButtonElement;
+    const btn = target.closest('[data-job-id]') as HTMLButtonElement;
     if (!btn) return;
 
     const jobId = btn.dataset.jobId;
@@ -124,10 +122,16 @@ export class ExcludeJobModal {
 
     if (this.tempExcludedJobIds.includes(jobId)) {
       this.tempExcludedJobIds = this.tempExcludedJobIds.filter((id) => id !== jobId);
-      btn.classList.remove('excluded');
+      btn.setAttribute('aria-pressed', 'false');
     } else {
       this.tempExcludedJobIds.push(jobId);
-      btn.classList.add('excluded');
+      btn.setAttribute('aria-pressed', 'true');
+    }
+
+    const job = ALL_JOBS.find((item) => item.id === jobId);
+    if (job) {
+      const isExcluded = this.tempExcludedJobIds.includes(jobId);
+      btn.textContent = `${job.name}${isExcluded ? '（除外中）' : ''}`;
     }
   }
 

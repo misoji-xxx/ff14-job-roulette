@@ -1,9 +1,6 @@
 import {
-  FREE_ICON,
   SLOT_ROLE_4_LABELS,
   SLOT_ROLE_8_LABELS,
-  SLOT_ROLE_ICONS,
-  getRoleClass,
   type SlotRole4,
   type SlotRole8,
 } from '../../data/jobs';
@@ -41,17 +38,11 @@ export class RoleModal {
 
   renderHTML(): string {
     return `
-      <div class="modal-overlay" id="${this.ids.modal}">
-        <div class="modal modal-sm">
-          <div class="modal-header">
-            <h3>ロール設定</h3>
-            <button type="button" class="modal-close" id="${this.ids.closeBtn}">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="role-grid" id="${this.ids.roleGrid}"></div>
-          </div>
-        </div>
-      </div>
+      <dialog id="${this.ids.modal}" aria-labelledby="roleModalHeading">
+        <h2 id="roleModalHeading">ロール設定</h2>
+        <div id="${this.ids.roleGrid}"></div>
+        <button type="button" id="${this.ids.closeBtn}">閉じる</button>
+      </dialog>
     `;
   }
 
@@ -64,96 +55,42 @@ export class RoleModal {
     this.currentPlayerIndex = playerIndex;
     this.callbacks = callbacks;
 
-    const modal = document.getElementById(this.ids.modal);
+    const modal = document.getElementById(this.ids.modal) as HTMLDialogElement | null;
     const roleGrid = document.getElementById(this.ids.roleGrid);
 
     if (!modal || !roleGrid) return;
 
     const roleLabels = partySize === 4 ? SLOT_ROLE_4_LABELS : SLOT_ROLE_8_LABELS;
 
-    const renderRoleButton = (role: string) => {
-      const iconSrc = SLOT_ROLE_ICONS[role as SlotRole8] || FREE_ICON;
-      const roleClass = getRoleClass(role as SlotRole8);
+    const renderRoleButton = (role: SlotRole4 | SlotRole8) => {
       const isSelected = role === currentRole;
       return `
         <button
           type="button"
-          class="role-option role-${roleClass} ${isSelected ? 'selected' : ''}"
           data-role="${role}"
+          aria-pressed="${isSelected}"
         >
-          <img src="${iconSrc}" alt="${role}" class="role-option-icon" />
-          <span class="role-option-name">${roleLabels[role as keyof typeof roleLabels]}</span>
+          ${roleLabels[role as keyof typeof roleLabels]}${isSelected ? '（選択中）' : ''}
         </button>
       `;
     };
 
-    if (partySize === 4) {
-      roleGrid.innerHTML = `
-        <div class="role-category">
-          <div class="role-category-header">タンク</div>
-          <div class="role-category-options">
-            ${renderRoleButton('tank')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">ヒーラー</div>
-          <div class="role-category-options">
-            ${renderRoleButton('healer')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">DPS</div>
-          <div class="role-category-options">
-            ${renderRoleButton('dps')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">その他</div>
-          <div class="role-category-options">
-            ${renderRoleButton('free')}
-          </div>
-        </div>
-      `;
-    } else {
-      roleGrid.innerHTML = `
-        <div class="role-category">
-          <div class="role-category-header">タンク</div>
-          <div class="role-category-options">
-            ${renderRoleButton('tank')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">ヒーラー</div>
-          <div class="role-category-options">
-            ${renderRoleButton('healer')}
-            ${renderRoleButton('pureHealer')}
-            ${renderRoleButton('barrierHealer')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">DPS</div>
-          <div class="role-category-options">
-            ${renderRoleButton('dps')}
-            ${renderRoleButton('melee')}
-            ${renderRoleButton('ranged')}
-            ${renderRoleButton('caster')}
-          </div>
-        </div>
-        <div class="role-category">
-          <div class="role-category-header">その他</div>
-          <div class="role-category-options">
-            ${renderRoleButton('free')}
-          </div>
-        </div>
-      `;
-    }
+    const roles: (SlotRole4 | SlotRole8)[] = partySize === 4
+      ? ['tank', 'healer', 'dps', 'free']
+      : ['tank', 'healer', 'pureHealer', 'barrierHealer', 'dps', 'melee', 'ranged', 'caster', 'free'];
 
-    modal.classList.add('visible');
+    roleGrid.innerHTML = roles.map(renderRoleButton).join('');
+    modal.oncancel = (event) => {
+      event.preventDefault();
+      this.close();
+    };
+    modal.showModal();
   }
 
   close(): void {
-    const modal = document.getElementById(this.ids.modal);
-    if (modal) modal.classList.remove('visible');
+    const modal = document.getElementById(this.ids.modal) as HTMLDialogElement | null;
+    if (modal?.open) modal.close();
+    if (modal) modal.oncancel = null;
 
     this.callbacks?.onClose();
     this.currentPlayerIndex = -1;

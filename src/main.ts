@@ -1,4 +1,3 @@
-import './styles/index.css';
 import {
   runRoulette,
   runAdvancedRoulette,
@@ -58,53 +57,48 @@ class JobRouletteApp {
       throw new Error('App container (#app) not found');
     }
     app.innerHTML = `
-      <div class="container">
-        <header class="header">
-          <h1>FFXIV Job Roulette</h1>
-          <p class="subtitle">パーティメンバーのジョブをランダムに決定します</p>
-        </header>
+      <main>
+        <h1>FF14 ジョブルーレット</h1>
+        <p>パーティメンバーのジョブをランダムに決定します。</p>
 
-        <main class="main">
-          <section class="section">
-            <div class="mode-toggle-container">
-              <button type="button" class="mode-toggle-btn ${this.appMode === 'simple' ? 'active' : ''}" data-mode="simple">
-                シンプル
-              </button>
-              <button type="button" class="mode-toggle-btn ${this.appMode === 'advanced' ? 'active' : ''}" data-mode="advanced">
-                高機能
-              </button>
-            </div>
-          </section>
+        <fieldset>
+          <legend>モード</legend>
+          <label>
+            <input type="radio" name="appMode" value="simple" ${this.appMode === 'simple' ? 'checked' : ''} />
+            シンプル
+          </label>
+          <label>
+            <input type="radio" name="appMode" value="advanced" ${this.appMode === 'advanced' ? 'checked' : ''} />
+            高機能
+          </label>
+        </fieldset>
 
-          <section class="section">
-            <h2>パーティ人数</h2>
-            <div class="party-size-buttons" role="group" aria-label="パーティ人数選択">
-              <button type="button" class="party-size-btn ${this.partySize === 4 ? 'active' : ''}" data-size="4" aria-pressed="${this.partySize === 4}">
-                4人
-              </button>
-              <button type="button" class="party-size-btn ${this.partySize === 8 ? 'active' : ''}" data-size="8" aria-pressed="${this.partySize === 8}">
-                8人
-              </button>
-            </div>
-          </section>
+        <fieldset>
+          <legend>パーティ人数</legend>
+          <label>
+            <input type="radio" name="partySize" value="4" ${this.partySize === 4 ? 'checked' : ''} />
+            4人
+          </label>
+          <label>
+            <input type="radio" name="partySize" value="8" ${this.partySize === 8 ? 'checked' : ''} />
+            8人
+          </label>
+        </fieldset>
 
-          ${this.appMode === 'advanced' ? this.renderAdvancedSettings() : ''}
+        ${this.appMode === 'advanced' ? this.renderAdvancedSettings() : ''}
 
-          <section class="section">
-            <h2>プレイヤー名${this.appMode === 'advanced' ? ' / ロール設定' : ''}</h2>
-            <div class="player-inputs" id="playerInputs"></div>
-          </section>
+        <section aria-labelledby="playersHeading">
+          <h2 id="playersHeading">プレイヤー${this.appMode === 'advanced' ? '・ロール' : ''}</h2>
+          <div id="playerInputs"></div>
+        </section>
 
-          <button type="button" class="roulette-btn" id="rouletteBtn" aria-label="ルーレットを開始してジョブをランダムに割り当てる">
-            ルーレット開始
-          </button>
+        <button type="button" id="rouletteBtn">ルーレット開始</button>
 
-          <section class="section results-section" id="resultsSection">
-            <h2>結果</h2>
-            <div class="results" id="results"></div>
-          </section>
-        </main>
-      </div>
+        <section id="resultsSection" aria-labelledby="resultsHeading" hidden>
+          <h2 id="resultsHeading">結果</h2>
+          <div id="results"></div>
+        </section>
+      </main>
 
       ${this.excludeJobModal.renderHTML()}
       ${this.roleModal.renderHTML()}
@@ -120,38 +114,36 @@ class JobRouletteApp {
     const canMaintainAlliance = canMaintainAllianceComposition(settings);
     const allianceSetting = this.partySize === 8
       ? `
-          <label class="checkbox-label ${!canMaintainAlliance ? 'disabled' : ''}" data-tooltip="フリー枠をアライアンス用構成（1T/2H/5DPS）で埋めます">
+          <label>
             <input
               type="checkbox"
               id="maintainAllianceComposition"
               ${settings.maintainAllianceComposition ? 'checked' : ''}
               ${!canMaintainAlliance ? 'disabled' : ''}
             />
-            <span>アライアンス構成を維持${!canMaintainAlliance ? '（固定枠が超過）' : ''}</span>
+            アライアンス構成を維持${!canMaintainAlliance ? '（固定枠が超過）' : ''}
           </label>
         `
       : '';
 
     return `
-      <section class="section advanced-settings">
-        <h2>詳細設定</h2>
-        <div class="settings-group">
-          <label class="checkbox-label">
+      <fieldset>
+        <legend>詳細設定</legend>
+          <label>
             <input type="checkbox" id="noJobDuplicates" ${settings.noJobDuplicates ? 'checked' : ''} />
-            <span>ジョブ重複禁止</span>
+            ジョブ重複禁止
           </label>
-          <label class="checkbox-label ${!canMaintain ? 'disabled' : ''}" data-tooltip="フリー枠を一般的なパーティ構成で埋めます">
+          <label>
             <input
               type="checkbox"
               id="maintainStandardComposition"
               ${settings.maintainStandardComposition ? 'checked' : ''}
               ${!canMaintain ? 'disabled' : ''}
             />
-            <span>標準構成を維持${!canMaintain ? '（固定枠が超過）' : ''}</span>
+            標準構成を維持${!canMaintain ? '（固定枠が超過）' : ''}
           </label>
           ${allianceSetting}
-        </div>
-      </section>
+      </fieldset>
     `;
   }
 
@@ -174,36 +166,19 @@ class JobRouletteApp {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 
-      const modeBtn = target.closest('.mode-toggle-btn') as HTMLButtonElement;
-      if (modeBtn) {
-        const mode = modeBtn.dataset.mode as AppMode;
-        if (mode) this.setAppMode(mode);
-        return;
-      }
-
-      const sizeBtn = target.closest('.party-size-btn') as HTMLButtonElement;
-      if (sizeBtn) {
-        const sizeStr = sizeBtn.dataset.size;
-        if (sizeStr) {
-          const size = parseInt(sizeStr, 10) as PartySize;
-          this.setPartySize(size);
-        }
-        return;
-      }
-
       if (target.closest('#rouletteBtn')) {
         this.executeRoulette();
         return;
       }
 
-      const roleSelectBtn = target.closest('.role-select-btn') as HTMLButtonElement;
+      const roleSelectBtn = target.closest('[data-action="select-role"]') as HTMLButtonElement;
       if (roleSelectBtn) {
         const index = parseInt(roleSelectBtn.dataset.index || '0', 10);
         this.openRoleModal(index);
         return;
       }
 
-      const excludeBtn = target.closest('.exclude-btn') as HTMLButtonElement;
+      const excludeBtn = target.closest('[data-action="exclude-jobs"]') as HTMLButtonElement;
       if (excludeBtn) {
         const index = parseInt(excludeBtn.dataset.index || '0', 10);
         this.openExcludeModal(index);
@@ -232,7 +207,7 @@ class JobRouletteApp {
         return;
       }
 
-      const roleOption = target.closest('.role-option') as HTMLButtonElement;
+      const roleOption = target.closest('[data-role]') as HTMLButtonElement;
       if (roleOption) {
         const roleValue = roleOption.dataset.role;
         if (roleValue) {
@@ -246,7 +221,7 @@ class JobRouletteApp {
         return;
       }
 
-      const rerollBtn = target.closest('.reroll-btn') as HTMLButtonElement;
+      const rerollBtn = target.closest('[data-action="reroll"]') as HTMLButtonElement;
       if (rerollBtn) {
         const index = parseInt(rerollBtn.dataset.index || '0', 10);
         this.executeReroll(index);
@@ -261,6 +236,21 @@ class JobRouletteApp {
 
     document.addEventListener('change', (e) => {
       const target = e.target as HTMLElement;
+
+      if (target instanceof HTMLInputElement && target.name === 'appMode') {
+        if (target.value === 'simple' || target.value === 'advanced') {
+          this.setAppMode(target.value);
+        }
+        return;
+      }
+
+      if (target instanceof HTMLInputElement && target.name === 'partySize') {
+        const size = Number(target.value);
+        if (size === 4 || size === 8) {
+          this.setPartySize(size);
+        }
+        return;
+      }
 
       if (target.id === 'noJobDuplicates') {
         const checkbox = target as HTMLInputElement;
@@ -412,7 +402,7 @@ class JobRouletteApp {
     }
   }
 
-  private showResults(members: PartyMember[], rerollIndex?: number): void {
+  private showResults(members: PartyMember[]): void {
     if (!this.resultsContainer) {
       throw new Error('Results container not found');
     }
@@ -429,7 +419,6 @@ class JobRouletteApp {
       isAdvancedMode: this.appMode === 'advanced',
       partySize: this.partySize,
       useSubRoleForFree,
-      rerollIndex,
     });
   }
 
@@ -457,7 +446,7 @@ class JobRouletteApp {
     }
 
     this.lastResults[index] = result.member;
-    this.showResults([...this.lastResults], index);
+    this.showResults([...this.lastResults]);
   }
 
   private showError(message: string): void {
@@ -476,12 +465,9 @@ class JobRouletteApp {
       await navigator.clipboard.writeText(text);
       const copyBtn = document.getElementById('copyResultsBtn');
       if (copyBtn) {
-        copyBtn.classList.add('copied');
-        const textSpan = copyBtn.querySelector('.copy-text');
-        if (textSpan) textSpan.textContent = 'コピーしました';
+        copyBtn.textContent = 'コピーしました';
         setTimeout(() => {
-          copyBtn.classList.remove('copied');
-          if (textSpan) textSpan.textContent = '結果をコピー';
+          copyBtn.textContent = '結果をコピー';
         }, 2000);
       }
     } catch {
